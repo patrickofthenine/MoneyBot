@@ -47,8 +47,8 @@ class Monpokomon:
 			'instruments': instruments,
 		}
 		prices = self.req(price_url, params, True)
-		for line in prices.iter_lines():
-			print(line)
+		[print(line) for line in prices.iter_lines()]
+
 
 
 
