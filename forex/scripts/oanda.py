@@ -1,9 +1,12 @@
 import os
 import json
 import dateutil.parser 
+from datetime import datetime
 import logging
 import requests
 from oanda.models import Price
+from oanda.models import Instrument
+
 
 class Monpokomon:
 	def __init__(self):
@@ -29,11 +32,11 @@ class Monpokomon:
 		res = self.req(instrument_url)
 		instruments_raw = res.json()
 		instruments = [instrument['name'] for instrument in instruments_raw['instruments']]
+		[Instrument.objects.update_or_create(name=instrument) for instrument in instruments]
 		return instruments;
 
 	def make_money(self):
 		prices = self.stream_prices()
-		print(prices)
 
 	def req(self, url, params=None, stream=False):
 		return requests.get(url, headers=self.auth_headers, params=params, stream=stream)
@@ -41,17 +44,18 @@ class Monpokomon:
 	def create_price_event(self, price):
 		try:
 			p = json.loads(price)
-			Price.objects.create(
-				instrument=p['instrument'],
-				bids=p['bids'],
-				asks=p['asks'],
-				closeoutBid=p['closeoutBid'],
-				closeoutAsk=p['closeoutAsk'],
-				tradeable=p['tradeable'],
-				time=p['time']
-			)
+			if not p['type'] == 'HEARTBEAT':
+				Price.objects.create(
+					instrument=p['instrument'],
+					bids=p['bids'],
+					asks=p['asks'],
+					closeout_bid=p['closeoutBid'],
+					closeout_ask=p['closeoutAsk'],
+					tradeable=p['tradeable'],
+					time=p['time']
+				)
 		except Exception as e:
-			logging.warn(e)
+			logging.warn('When: {}, {}, {}'.format(datetime.now(), e, price))
 
 	def stream_prices(self):
 		account_id = self.accounts[0]
@@ -68,8 +72,5 @@ class Monpokomon:
 		prices = self.req(price_url, params, True)
 		[self.create_price_event(price) for price in prices.iter_lines()]
 
-
-
-
-money = Monpokomon().make_money()
-
+def run():
+	Monpokomon().make_money()
