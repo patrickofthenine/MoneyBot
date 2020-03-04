@@ -1,18 +1,29 @@
 from oanda.models import Price, Candle
 from datetime import datetime
 from datetime import timedelta
+import logging
 import pytz
 import time
 
-class TA:
+class Candleyze:
 	def __init__(self):
 		None
 
-	def run(self):
-		price_buckets  = self.create_buckets(60)
+	def run(self, interval=60):
+		price_buckets  = self.create_buckets(interval=interval, buckets=4)
 		sorted_buckets = self.sort_buckets(price_buckets)
 		candles = self.candlyze(sorted_buckets)
-		self.save_candles(candles)
+
+		last_candled = None
+		while(True):
+			if not last_candled:
+				last_candled = int(time.time())
+				self.save_candles(candles)
+			if int(time.time()) - last_candled > interval:
+				last_candled = int(time.time())
+				logging.warning('...saving candles')
+				self.save_candles(candles)
+		return
 
 	def candlyze(self, buckets):
 		candled = {}
@@ -22,8 +33,8 @@ class TA:
 				candled[instrument] = candles
 		return candled
 
-	def create_buckets(self, interval=60):
-		ranges = self.get_time_ranges(interval)
+	def create_buckets(self, interval=60, buckets=4):
+		ranges = self.get_time_ranges(interval, buckets)
 		price_buckets = []
 		for r in ranges:
 			start  = pytz.utc.localize(r['start'])
@@ -57,9 +68,9 @@ class TA:
 			counter = counter + 1
 		return results
 
-	def get_time_ranges(self, interval):
+	def get_time_ranges(self, interval, buckets):
 		ranges = []
-		step = int(interval / 4)
+		step = int(interval / buckets)
 		i = 0
 		j = 0
 		while i < interval:
@@ -104,4 +115,4 @@ class TA:
 		return sorted_buckets
 
 def run():
-	TA().run()
+	Candleyze().run()
