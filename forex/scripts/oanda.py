@@ -1,14 +1,12 @@
 import os
 import json
-import dateutil.parser 
 from datetime import datetime
 import logging
 import requests
 from oanda.models import Price
 from oanda.models import Instrument
 
-
-class Monpokomon:
+class OANDA:
 	def __init__(self):
 		self.auth_headers = self.generate_auth_headers()
 		self.accounts = self.fetch_account_list()
@@ -44,7 +42,9 @@ class Monpokomon:
 	def create_price_event(self, price):
 		try:
 			p = json.loads(price)
+			print('price', price, p)
 			if not p['type'] == 'HEARTBEAT':
+				print(p)
 				Price.objects.create(
 					instrument=p['instrument'],
 					bids=p['bids'],
@@ -69,8 +69,8 @@ class Monpokomon:
 		params = {
 			'instruments': instruments,
 		}
-		prices = self.req(price_url, params, True)
+		prices = self.req(price_url, params=params, stream=True)
 		[self.create_price_event(price) for price in prices.iter_lines()]
 
 def run():
-	Monpokomon().make_money()
+	OANDA().make_money()
