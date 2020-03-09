@@ -20,5 +20,5 @@ class Candle(models.Model):
 	low = models.FloatField(default=0.0)
 	close = models.FloatField(default=0.0)
 	volume = models.IntegerField(default=0)
-	batch = models.CharField(max_length=50)
+	batch = models.IntegerField(default=0)
 	time = models.DateTimeField(auto_now_add=True)
